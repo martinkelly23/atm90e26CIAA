@@ -1,8 +1,8 @@
- /* ATM90E26
+ /* ATM90E26 librería
 
     The MIT License (MIT)
 
-  Copyright (c) 2017 Kelly MartÃ­n
+  Copyright (c) 2017 Kelly Martin
 
   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -27,40 +27,38 @@ unsigned short CommEnergyIC(unsigned char RW,unsigned char address, unsigned sho
   }
 
   //begin UART command
-  //ATMSerial.write(0xFE); //primer byte enviado para que el ATM90E26 detecte el baud rate.
-  //ATMSerial.write(address); //segundo byte enviado, RW_ADDRESS, which has a R/W bit (bit7) and 7 address bits (bit6-0).
-
-  uartWriteByte(UART_232, 0xFE);
-  uartWriteByte(UART_232, address);
+  uartWriteByte(UART_232, 0xFE); //primer byte enviado para que el ATM90E26 detecte el baud rate.
+  uartWriteByte(UART_232, address); //segundo byte enviado, RW_ADDRESS, which has a R/W bit (bit7) and 7 address bits (bit6-0).
 
 
   if(!RW) //Si es una operacion de escritura en registro
   {
       byte MSBWrite = val>>8;
       byte LSBWrite = val&0xFF;
-      //ATMSerial.write(MSBWrite);
-      //ATMSerial.write(LSBWrite);
 
       uartWriteByte(UART_232, MSBWrite);
       uartWriteByte(UART_232, LSBWrite);
   }
-  //ATMSerial.write(host_chksum);
   uartWriteByte(UART_232, host_chksum);
   delay(10);
 
   //Read register only
   if(RW) //Operacion de lectura
   {
-    byte MSByte = ATMSerial.read();
-    byte LSByte = ATMSerial.read();
-    byte atm90_chksum = ATMSerial.read();
+    byte MSByte;
+    byte LSByte;
+    byte atm90_chksum;
+
+    uartReadByte(UART_232, &MSByte);
+    uartReadByte(UART_232, &LSByte);
+    uartReadByte(UART_232, &atm90_chksum);
 
     if(atm90_chksum == ((LSByte + MSByte) & 0xFF))
     {
       output=(MSByte << 8) | LSByte; //join MSB and LSB;
       return output;
     }
-    Serial.println("Read failed");
+    uartWriteString(UART_USB, "Falló la lectura");
     delay(20); // Delay from failed transaction
     return 0xFFFF;
   }
@@ -68,11 +66,13 @@ unsigned short CommEnergyIC(unsigned char RW,unsigned char address, unsigned sho
   //Write register only
   else //Operacion de escritura
   {
-    byte atm90_chksum = ATMSerial.read();
+    byte atm90_chksum;
+    uartReadByte(UART_232, &atm90_chksum);
+
     if(atm90_chksum != host_chksum)
     {
-      Serial.println("Write failed");
-      delay(20); // Delay from failed transaction
+    	uartWriteString(UART_USB, "Falló la escritura");
+    	delay(20); // Delay from failed transaction
     }
   }
   return 0xFFFF;
@@ -157,9 +157,8 @@ void InitEnergyIC(){
 	CommEnergyIC(0,MMode,0x9422); //Metering Mode Configuration. All defaults. See pg 31 of datasheet.
 	CommEnergyIC(0,CSOne,0x4A34); //Write CSOne, as self calculated
 
-	Serial.print("Checksum 1:");
-	Serial.println(CommEnergyIC(1,CSOne,0x0000),HEX); //Checksum 1. Needs to be calculated based off the above values.
-
+	uartWriteString(UART_USB, "Checksum 1:");
+	uartWriteString(UART_USB, CommEnergyIC(1,CSOne,0x0000)); //HEX Checksum 1. Needs to be calculated based off the above values.
 
 	//Set measurement calibration values
 	CommEnergyIC(0,AdjStart,0x5678); //Measurement calibration startup command, registers 31-3A
@@ -171,8 +170,8 @@ void InitEnergyIC(){
 	CommEnergyIC(0,QoffsetL,0x0000); //L line reactive power offset
 	CommEnergyIC(0,CSTwo,0xD294); //Write CSTwo, as self calculated
 
-	Serial.print("Checksum 2:");
-	Serial.println(CommEnergyIC(1,CSTwo,0x0000),HEX);    //Checksum 2. Needs to be calculated based off the above values.
+	uartWriteString(UART_USB, "Checksum 2:");
+	uartWriteString(UART_USB, CommEnergyIC(1,CSTwo,0x0000));  //HEX Checksum 2. Needs to be calculated based off the above values.
 
 	CommEnergyIC(0,CalStart,0x8765); //Checks correctness of 21-2B registers and starts normal metering if ok
 	CommEnergyIC(0,AdjStart,0x8765); //Checks correctness of 31-3A registers and starts normal measurement  if ok
@@ -181,10 +180,10 @@ void InitEnergyIC(){
 
 	if (systemstatus&0xC000){
 		//checksum 1 error
-		Serial.println("Checksum 1 Error!!");
+		uartWriteString(UART_USB, "Checksum 1 Error!!");
 	}
 	if (systemstatus&0x3000){
 		//checksum 2 error
-		Serial.println("Checksum 2 Error!!");
+		uartWriteString(UART_USB, "Checksum 2 Error!!");
 	}
 }
