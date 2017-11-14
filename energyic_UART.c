@@ -134,11 +134,6 @@ void InitEnergyIC(){
 
 	uartConfig( UART_232, 9600 ); //Configuramos la UART que vamos a utilzar con el baudRate
 
-	#if defined(ARDUINO_ARCH_SAMD)
-	pinPeripheral(PIN_SerialATM_RX, PIO_SERCOM);
-	pinPeripheral(PIN_SerialATM_TX, PIO_SERCOM);
-	#endif
-
 	CommEnergyIC(0,SoftReset,0x789A); //Perform soft reset
 	CommEnergyIC(0,FuncEn,0x0030); //Voltage sag irq=1, report on warnout pin=1, energy dir change irq=0
 	CommEnergyIC(0,SagTh,0x1F2F); //Voltage sag threshhold
