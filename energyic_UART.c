@@ -19,7 +19,7 @@ unsigned short CommEnergyIC(unsigned char RW,unsigned char address, unsigned sho
   //Set read write flag
   address|=RW<<7;
 
-  byte host_chksum = address;
+  unsigned char host_chksum = address;
   if(!RW) //Si es una operacion de escritura en registro
   {
     unsigned short chksum_short = (val>>8) + (val&0xFF) + address;
@@ -33,8 +33,8 @@ unsigned short CommEnergyIC(unsigned char RW,unsigned char address, unsigned sho
 
   if(!RW) //Si es una operacion de escritura en registro
   {
-      byte MSBWrite = val>>8;
-      byte LSBWrite = val&0xFF;
+	  unsigned char MSBWrite = val>>8;
+	  unsigned char LSBWrite = val&0xFF;
 
       uartWriteByte(UART_232, MSBWrite);
       uartWriteByte(UART_232, LSBWrite);
@@ -45,9 +45,9 @@ unsigned short CommEnergyIC(unsigned char RW,unsigned char address, unsigned sho
   //Read register only
   if(RW) //Operacion de lectura
   {
-    byte MSByte;
-    byte LSByte;
-    byte atm90_chksum;
+	  unsigned char MSByte;
+	  unsigned char LSByte;
+	  unsigned char atm90_chksum;
 
     uartReadByte(UART_232, &MSByte);
     uartReadByte(UART_232, &LSByte);
@@ -66,7 +66,7 @@ unsigned short CommEnergyIC(unsigned char RW,unsigned char address, unsigned sho
   //Write register only
   else //Operacion de escritura
   {
-    byte atm90_chksum;
+	  unsigned char atm90_chksum;
     uartReadByte(UART_232, &atm90_chksum);
 
     if(atm90_chksum != host_chksum)
